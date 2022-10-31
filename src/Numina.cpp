@@ -3,74 +3,70 @@
 
 #include <algorithm>
 
-struct WindowDescriptor : public tt::Resource {
-    int x = 0;
-};
+struct CloseOnEscape : public tt::System
+{
+    bool on_event(tt::NuminaApp &app, tt::NuminaEvent event)
+    {
+        if (event.m_type == tt::KeyUp)
+            app.running = false;
 
-struct WindowSystem : public tt::System {
-    int32_t priority() override {
-        return 100;
+        return true;
     }
-
-    void on_startup(tt::NuminaApp &) {}
-
-    void on_event(tt::NuminaApp &) {}
-
-    void on_update(tt::NuminaApp &) {}
-
-    void on_render(tt::NuminaApp &) {}
-
-    void on_destroy(tt::NuminaApp &) {}
 };
 
-struct EventSystem : public tt::System {
-    int32_t priority() override {
-        return 1;
-    }
-
-    void on_startup(tt::NuminaApp &) {}
-
-    void on_event(tt::NuminaApp &) {}
-
-    void on_update(tt::NuminaApp &) {}
-
-    void on_render(tt::NuminaApp &) {}
-
-    void on_destroy(tt::NuminaApp &) {}
-};
-
-void test() {
+void test()
+{
     tt::NuminaApp app;
-    app.insert_resource<WindowDescriptor>({})
-            .add_system<WindowSystem>({})
-            .add_system<EventSystem>({})
-            .add_plugin<tt::SDL2Plugin>({})
-            .run();
+    app.add_plugin<tt::SDL2Plugin>({}).add_system<CloseOnEscape>({}).run();
 }
 
-void tt::NuminaApp::run() {
-    if (m_systems.size() > 1) {
+void tt::NuminaApp::dispatch_event(tt::NuminaEvent event)
+{
+    printf("New Event!\n");
+    m_events.push_back(event);
+}
+
+void tt::NuminaApp::run()
+{
+    if (m_systems.size() > 1)
+    {
         std::sort(m_systems.begin(), m_systems.end(),
                   [](const std::unique_ptr<System> &left, const std::unique_ptr<System> &right) {
                       return left->priority() < right->priority();
                   });
     }
 
-    for (auto &system: m_systems) {
+    for (auto &system : m_systems)
+    {
         system->on_startup(*this);
     }
 
-    while (this->running) {
-        for (auto &system: m_systems) {
-            system->on_event(*this);
+    while (this->running)
+    {
+        if (m_events.size())
+        {
+            std::sort(m_events.begin(), m_events.end(),
+                      [](const NuminaEvent &left, const NuminaEvent &right) { return left.m_type < right.m_type; });
+            for (auto &event : m_events)
+            {
+                for (auto &system : m_systems)
+                {
+                    if (system->on_event(*this, event))
+                        break;
+                }
+            }
+
+            m_events.clear();
         }
 
-        for (auto &system: m_systems) {
+        for (auto &system : m_systems)
+        {
             system->on_update(*this);
         }
     }
 
-    for (auto &system : m_systems) {
+    for (auto &system : m_systems)
+    {
         system->on_destroy(*this);
     }
 }

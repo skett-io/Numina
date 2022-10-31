@@ -3,31 +3,37 @@
 
 #include <stdint.h>
 
+#include "Numina_Event.h"
+
 namespace tt
 {
-    struct NuminaApp;
+struct NuminaApp;
 
-    struct Resource
-    {};
+struct Resource
+{
+};
 
-    struct System
+struct System
+{
+    virtual int32_t priority()
     {
-        virtual int32_t priority()
-        {
-            return 0;
-        }
+        return 0;
+    }
 
-        virtual void on_startup(NuminaApp &) = 0;
-        virtual void on_event(NuminaApp &) = 0;
-        virtual void on_update(NuminaApp &) = 0;
-        virtual void on_render(NuminaApp &) = 0;
-        virtual void on_destroy(NuminaApp &) = 0;
-    };
-
-    struct Plugin
+    virtual void on_startup(NuminaApp &){};
+    virtual bool on_event(NuminaApp &, NuminaEvent)
     {
-        virtual void build(NuminaApp &) = 0;
+        return false;
     };
-}
+    virtual void on_update(NuminaApp &){};
+    virtual void on_render(NuminaApp &){};
+    virtual void on_destroy(NuminaApp &){};
+};
+
+struct Plugin
+{
+    virtual void build(NuminaApp &) = 0;
+};
+} // namespace tt
 
 #endif // NUMINA_PLUGIN_H

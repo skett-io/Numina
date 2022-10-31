@@ -1,6 +1,7 @@
 #ifndef NUMINA_APP_H
 #define NUMINA_APP_H
 
+#include "Numina_Event.h"
 #include "Numina_Plugin.h"
 
 #include <unordered_map>
@@ -43,9 +44,12 @@ namespace tt
             return std::static_pointer_cast<T>(m_resources[typeid(T)]);
         }
 
+        void dispatch_event(NuminaEvent);
         void run();
 
     private:
+        std::vector<NuminaEvent> m_events;
+
         std::unordered_map<std::type_index, std::shared_ptr<Resource>> m_resources;
         std::vector<std::unique_ptr<System>> m_systems;
     };
