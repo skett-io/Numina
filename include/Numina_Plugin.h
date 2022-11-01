@@ -27,7 +27,7 @@ struct System
     };
     virtual void on_update(NuminaApp &){};
     virtual void on_render(NuminaApp &){};
-    virtual void on_destroy(NuminaApp &){};
+    virtual void on_destroy(NuminaApp &){}; // called in reverse priority
 };
 
 struct Plugin

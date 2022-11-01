@@ -1,4 +1,5 @@
 #include "Numina_App.h"
+#include "Numina_Graphics.h"
 #include "Numina_SDL2.h"
 
 #include <algorithm>
@@ -8,21 +9,49 @@ struct CloseOnEscape : public tt::System
     bool on_event(tt::NuminaApp &app, tt::NuminaEvent event)
     {
         if (event.m_type == tt::KeyUp)
+        {
             app.running = false;
+            return true;
+        }
 
-        return true;
+        return false;
+    }
+};
+
+struct CancelKeyUp : public tt::System
+{
+    int32_t priority() override
+    {
+        return 1;
+    }
+
+    bool on_event(tt::NuminaApp &app, tt::NuminaEvent event) override
+    {
+        if (event.m_type == tt::KeyUp)
+        {
+            printf("Canceled event!\n");
+            return true;
+        }
+
+        return false;
     }
 };
 
 void test()
 {
     tt::NuminaApp app;
-    app.add_plugin<tt::SDL2Plugin>({}).add_system<CloseOnEscape>({}).run();
+    app.insert_resource<tt::WindowDescriptor>({
+                                                  .title = "Numina Example",
+                                                  .width = 1920,
+                                                  .height = 1080,
+                                              })
+        .add_plugin<tt::SDL2Plugin>({})
+        .add_system<CloseOnEscape>({})
+        .run();
 }
 
 void tt::NuminaApp::dispatch_event(tt::NuminaEvent event)
 {
-    printf("New Event!\n");
     m_events.push_back(event);
 }
 
@@ -37,9 +66,7 @@ void tt::NuminaApp::run()
     }
 
     for (auto &system : m_systems)
-    {
         system->on_startup(*this);
-    }
 
     while (this->running)
     {
@@ -47,11 +74,13 @@ void tt::NuminaApp::run()
         {
             std::sort(m_events.begin(), m_events.end(),
                       [](const NuminaEvent &left, const NuminaEvent &right) { return left.m_type < right.m_type; });
+
             for (auto &event : m_events)
             {
-                for (auto &system : m_systems)
+                for (auto system = m_systems.rbegin(); system != m_systems.rend(); system++)
                 {
-                    if (system->on_event(*this, event))
+                    printf("Priority: %d\n", system->get()->priority());
+                    if (system->get()->on_event(*this, event))
                         break;
                 }
             }
@@ -60,13 +89,12 @@ void tt::NuminaApp::run()
         }
 
         for (auto &system : m_systems)
-        {
             system->on_update(*this);
-        }
+
+        for (auto &system : m_systems)
+            system->on_render(*this);
     }
 
-    for (auto &system : m_systems)
-    {
-        system->on_destroy(*this);
-    }
+    for (auto system = m_systems.rbegin(); system != m_systems.rend(); system++)
+        system->get()->on_destroy(*this);
 }

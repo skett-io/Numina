@@ -1,5 +1,6 @@
 #include "Numina_SDL2.h"
 #include "Numina_App.h"
+#include "Numina_Graphics.h"
 #include <SDL.h>
 
 struct SDL2Resource : public tt::Resource
@@ -39,13 +40,21 @@ struct SDL2StartupSystem : public tt::System
 
     void on_startup(tt::NuminaApp &app) override
     {
+        std::shared_ptr<tt::WindowDescriptor> window_descriptor = app.get_resource<tt::WindowDescriptor>();
+        if (!window_descriptor)
+        {
+            app.insert_resource<tt::WindowDescriptor>({});
+            window_descriptor = app.get_resource<tt::WindowDescriptor>();
+        }
+
         m_resource = app.get_resource<SDL2Resource>();
 
         if (SDL_Init(SDL_INIT_VIDEO) != 0)
             return;
 
         m_resource->window =
-            SDL_CreateWindow("Numina", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);
+            SDL_CreateWindow(window_descriptor->title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                             window_descriptor->width, window_descriptor->height, SDL_WINDOW_OPENGL);
         if (!m_resource->window)
             return;
     }
